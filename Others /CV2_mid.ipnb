@@ -1,0 +1,3548 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Computer Vision Labs 1–6 — Master Python Cheat Sheet\n",
+    "\n",
+    "**Exam format:** topic-wise reusable code + one-line **WHAT / WHEN** notes.\n",
+    "\n",
+    "This notebook covers the coding concepts used across the uploaded Labs 1–6, including Python/NumPy/OpenCV basics, image enhancement, geometric and point transformations, filtering/features, segmentation, wavelets, Hough, SIFT, video, and security/lane/coin detection."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## How to use this cheat sheet\n",
+    "\n",
+    "**Do not memorize every line.** Memorize the small code patterns, know what the parameters mean, and choose the technique from the problem statement."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Master roadmap\n",
+    "\n",
+    "**Read → Represent → Preprocess → Transform/Enhance → Extract features → Segment/Detect → Annotate → Save**\n",
+    "\n",
+    "- Lab 1: basic image operations\n",
+    "- Lab 2: enhancement / point & geometric transformations\n",
+    "- Lab 3: filtering + feature extraction\n",
+    "- Lab 4: segmentation\n",
+    "- Lab 5: wavelets + boundaries + Hough + SIFT\n",
+    "- Lab 6: applied detection/video pipelines"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 0. Libraries — WHAT / WHEN\n",
+    "`cv2` = image/video processing; `numpy` = pixel arrays and math; `matplotlib` = plotting; `skimage` = HOG/LBP; `pywt` = wavelets; `pathlib` = safe file paths."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import cv2\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "from pathlib import Path\n",
+    "# Optional:\n",
+    "# from skimage.feature import hog, local_binary_pattern\n",
+    "# import pywt"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 1. Variables, assignment & basic Python — WHAT / WHEN\n",
+    "Use variables to store images, parameters, intermediate results, and outputs."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "image_path = \"image.jpg\"\n",
+    "threshold = 127\n",
+    "gamma = 0.7\n",
+    "result = None\n",
+    "print(threshold, gamma)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 2. Lists, tuples & dictionaries — WHAT / WHEN\n",
+    "Use lists for collections, tuples for fixed groups such as `(width, height)`, and dictionaries for named settings."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "kernels = [(3, 3), (5, 5)]\n",
+    "image_size = (640, 480)\n",
+    "config = {\"threshold\": 127, \"kernel\": 5}"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 3. `if / elif / else` — WHAT / WHEN\n",
+    "Use conditions to check image loading, detection results, thresholds, and success/failure states."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "if image is None:\n",
+    "    print(\"Image not found\")\n",
+    "elif image.shape[0] > 500:\n",
+    "    print(\"Large image\")\n",
+    "else:\n",
+    "    print(\"Image loaded\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4. `for` loops — WHAT / WHEN\n",
+    "Use loops when the same operation must be performed for multiple thresholds, kernels, frames, contours, or detections."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for k in [3, 5, 7]:\n",
+    "    print(\"Kernel:\", k)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 5. `while` loops — WHAT / WHEN\n",
+    "Use a `while` loop for continuous video-frame processing until the video ends or the user quits."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "while True:\n",
+    "    ok, frame = cap.read()\n",
+    "    if not ok:\n",
+    "        break\n",
+    "    # process frame"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 6. Functions — WHAT / WHEN\n",
+    "Use functions to package repeated processing steps such as enhancement, resizing, color balance, or display."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def normalize_image(img):\n",
+    "    return cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)\n",
+    "\n",
+    "# when needed:\n",
+    "# result = normalize_image(image)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 7. `try / except / finally` — WHAT / WHEN\n",
+    "Use it when resources such as videos must always be released even if an error occurs."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "try:\n",
+    "    # processing\n",
+    "    pass\n",
+    "finally:\n",
+    "    # cap.release()\n",
+    "    # out.release()\n",
+    "    pass"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 8. `Path` and file paths — WHAT / WHEN\n",
+    "Use `Path` to build portable relative paths and create output folders."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "BASE = Path(\".\")\n",
+    "data_dir = BASE / \"data\"\n",
+    "output_dir = BASE / \"output\"\n",
+    "output_dir.mkdir(parents=True, exist_ok=True)\n",
+    "print(data_dir, output_dir)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 9. Read a color image — WHAT / WHEN\n",
+    "`cv2.imread()` loads an image in OpenCV's default BGR order; use it whenever an image is the input."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "image = cv2.imread(\"image.jpg\")\n",
+    "if image is None:\n",
+    "    raise FileNotFoundError(\"Image could not be loaded\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 10. Read grayscale — WHAT / WHEN\n",
+    "Use `IMREAD_GRAYSCALE` when the task needs one intensity channel, such as thresholding, Sobel, Canny, HOG, LBP, or wavelets."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gray = cv2.imread(\"image.jpg\", cv2.IMREAD_GRAYSCALE)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 11. Check image shape — WHAT / WHEN\n",
+    "Use `.shape` to get height, width, and channel count before resizing, cropping, ROI creation, or coordinate calculations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "h, w = image.shape[:2]\n",
+    "print(h, w)\n",
+    "# Color image: (h, w, 3)\n",
+    "# Grayscale: (h, w)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 12. BGR → RGB — WHAT / WHEN\n",
+    "Use this before showing an OpenCV color image with Matplotlib because OpenCV reads BGR while Matplotlib expects RGB."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)\n",
+    "plt.imshow(rgb)\n",
+    "plt.axis(\"off\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 13. RGB → grayscale — WHAT / WHEN\n",
+    "Use this to reduce a color image to one intensity channel for many CV algorithms."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 14. Display with Matplotlib — WHAT / WHEN\n",
+    "Use `imshow`, `title`, and `axis('off')` for notebook visualization."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(8, 5))\n",
+    "plt.imshow(gray, cmap=\"gray\")\n",
+    "plt.title(\"Image\")\n",
+    "plt.axis(\"off\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 15. Display with OpenCV — WHAT / WHEN\n",
+    "Use `cv2.imshow()` for desktop/live display, especially video; `waitKey()` keeps the window responsive."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cv2.imshow(\"Image\", image)\n",
+    "key = cv2.waitKey(0)\n",
+    "cv2.destroyAllWindows()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 16. Save an image — WHAT / WHEN\n",
+    "Use `cv2.imwrite()` when the task requires a saved output image."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cv2.imwrite(\"output.jpg\", image)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 17. NumPy pixel access — WHAT / WHEN\n",
+    "Use `image[y, x]` to access a pixel; remember **row = y, column = x**."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pixel = gray[100, 200]\n",
+    "gray[100, 200] = 255"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 18. NumPy slicing / crop — WHAT / WHEN\n",
+    "Use `image[y1:y2, x1:x2]` to crop an ROI without a CV-specific function."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "roi = image[y1:y2, x1:x2]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 19. Copy an image — WHAT / WHEN\n",
+    "Use `.copy()` when you need an independent image for overlays/drawing without changing the original."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "overlay = image.copy()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 20. Data types — WHAT / WHEN\n",
+    "Use `uint8` for normal 0–255 images and `float32/float64` when calculations can exceed integer ranges or need decimals."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gray8 = gray.astype(np.uint8)\n",
+    "work = gray.astype(np.float32)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 21. Zeros / ones arrays — WHAT / WHEN\n",
+    "Use `np.zeros()` for black canvases/masks and `np.ones()` for kernels or constant matrices."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "canvas = np.zeros((800, 800, 3), dtype=np.uint8)\n",
+    "mask = np.zeros(gray.shape, dtype=np.uint8)\n",
+    "kernel = np.ones((3, 3), dtype=np.float32)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 22. `np.uint8`, `np.float32`, `np.float64` — WHAT / WHEN\n",
+    "Use explicit conversion when OpenCV expects a specific numeric type or when arithmetic needs decimal precision."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x = np.array([1, 2, 3], dtype=np.float32)\n",
+    "x8 = np.clip(x, 0, 255).astype(np.uint8)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 23. `np.clip()` — WHAT / WHEN\n",
+    "Use it to keep calculated pixel values inside a valid range such as 0–255."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "safe = np.clip(result, 0, 255).astype(np.uint8)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 24. `np.sqrt`, `np.sin`, `np.cos`, `np.pi` — WHAT / WHEN\n",
+    "Use these for gradient magnitude, rotation/shear matrices, and angle calculations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "theta = np.deg2rad(45)\n",
+    "c, s = np.cos(theta), np.sin(theta)\n",
+    "magnitude = np.sqrt(gx**2 + gy**2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 25. `np.arctan2()` — WHAT / WHEN\n",
+    "Use it to calculate gradient/line direction from vertical and horizontal components."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "direction = np.arctan2(gy, gx)\n",
+    "degrees = np.degrees(direction)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 26. `np.mean`, `np.median`, `np.max`, `np.min` — WHAT / WHEN\n",
+    "Use them for statistics, color balancing, thresholds, robust anomaly detection, and finding image ranges."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "mean_value = np.mean(gray)\n",
+    "median_value = np.median(gray)\n",
+    "maximum = np.max(gray)\n",
+    "minimum = np.min(gray)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 27. `np.where()` — WHAT / WHEN\n",
+    "Use it to get indices where a condition is true, such as detected anomaly pixels."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "indices = np.where(np.abs(residual) > threshold)[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 28. `np.count_nonzero()` — WHAT / WHEN\n",
+    "Use it to count selected/non-zero pixels, useful for masks and region-growing results."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "count = np.count_nonzero(mask)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 29. `reshape()` — WHAT / WHEN\n",
+    "Use it to change array layout; especially important for K-Means where an image becomes a list of pixels."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pixels = image.reshape((-1, 3))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 30. `ravel()` — WHAT / WHEN\n",
+    "Use it to flatten an array to 1D for histograms and statistics."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "values = gray.ravel()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 31. `zip()` — WHAT / WHEN\n",
+    "Use it to iterate through matching items such as radii and colors together."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "radii = [300, 240, 180]\n",
+    "colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]\n",
+    "for r, color in zip(radii, colors):\n",
+    "    print(r, color)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# LAB 1 — BASIC IMAGE PROCESSING"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 32. Resize — WHAT / WHEN\n",
+    "Use `cv2.resize()` when images must have a common size before comparison, masking, fusion, or display."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "resized = cv2.resize(image, (500, 500))\n",
+    "# or preserve ratio:\n",
+    "resized = cv2.resize(image, None, fx=0.5, fy=0.5)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 33. Gaussian blur — WHAT / WHEN\n",
+    "Use Gaussian smoothing to reduce noise before edge detection, thresholding, or other sensitive operations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "blurred = cv2.GaussianBlur(image, (5, 5), 1)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 34. Median blur — WHAT / WHEN\n",
+    "Use median filtering when you want noise reduction while preserving edges, especially for salt-and-pepper-like noise."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "blurred = cv2.medianBlur(gray, 7)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 35. Global binary threshold — WHAT / WHEN\n",
+    "Use one threshold for the whole image when foreground and background have a useful intensity separation."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "_, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 36. Inverse threshold — WHAT / WHEN\n",
+    "Use `THRESH_BINARY_INV` when you want pixels below the threshold to become white."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "mask = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)[1]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 37. Histogram equalization — WHAT / WHEN\n",
+    "Use `equalizeHist()` to spread grayscale intensities and improve global contrast."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "equalized = cv2.equalizeHist(gray)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 38. Histogram with Matplotlib — WHAT / WHEN\n",
+    "Use `plt.hist()` to inspect the distribution of grayscale/intensity values."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.hist(gray.ravel(), bins=256, range=(0, 256))\n",
+    "plt.xlabel(\"Pixel intensity\")\n",
+    "plt.ylabel(\"Frequency\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 39. Alpha blending — WHAT / WHEN\n",
+    "Use `addWeighted()` to combine an overlay with the original image, such as a transparent colored banner."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "blended = cv2.addWeighted(overlay, 0.5, image, 0.5, 0)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 40. Drawing rectangle — WHAT / WHEN\n",
+    "Use `cv2.rectangle()` for bounding boxes, ROIs, security zones, and annotation areas."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)\n",
+    "# OpenCV colors are BGR"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 41. Drawing circle — WHAT / WHEN\n",
+    "Use `cv2.circle()` for markers, centers, masks, and circular objects."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cv2.circle(image, (cx, cy), radius, (0, 255, 0), 2)\n",
+    "# thickness=-1 means filled"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 42. Drawing text — WHAT / WHEN\n",
+    "Use `cv2.putText()` to add labels, counts, status, or detection confidence."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cv2.putText(\n",
+    "    image, \"Detected\", (20, 40),\n",
+    "    cv2.FONT_HERSHEY_SIMPLEX, 1,\n",
+    "    (0, 255, 0), 2\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 43. Blank canvas + shapes — WHAT / WHEN\n",
+    "Use a zero canvas plus drawing functions to create geometric diagrams or masks from scratch."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "canvas = np.zeros((800, 800, 3), dtype=np.uint8)\n",
+    "center = (400, 400)\n",
+    "for r, color in zip([300, 240, 180], [(255,0,0), (0,255,0), (0,0,255)]):\n",
+    "    cv2.circle(canvas, center, r, color, -1)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# LAB 2 — POINT / PHOTOMETRIC TRANSFORMATIONS"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 44. Negative / intensity inversion — WHAT / WHEN\n",
+    "Use `255 - image` to invert grayscale intensities when dark and bright regions need to be reversed."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "negative = 255 - gray"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 45. Logarithmic transformation — WHAT / WHEN\n",
+    "Use a log transform to expand dark intensities and compress very bright values."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x = gray.astype(np.float32)\n",
+    "c = 255 / np.log1p(np.max(x))\n",
+    "log_img = c * np.log1p(x)\n",
+    "log_img = np.clip(log_img, 0, 255).astype(np.uint8)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 46. Gamma / power-law transformation — WHAT / WHEN\n",
+    "Use gamma correction to control brightness/contrast; gamma < 1 usually brightens, gamma > 1 usually darkens."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gamma = 0.7\n",
+    "norm = gray.astype(np.float32) / 255.0\n",
+    "gamma_img = np.power(norm, gamma) * 255\n",
+    "gamma_img = np.clip(gamma_img, 0, 255).astype(np.uint8)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 47. Linear intensity scaling — WHAT / WHEN\n",
+    "Use linear scaling when you want to stretch/compress an intensity range."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "alpha, beta = 1.2, 10\n",
+    "scaled = cv2.convertScaleAbs(gray, alpha=alpha, beta=beta)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 48. Otsu threshold — WHAT / WHEN\n",
+    "Use Otsu when you want OpenCV to choose a global threshold automatically from the histogram."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "otsu_value, otsu = cv2.threshold(\n",
+    "    gray, 0, 255,\n",
+    "    cv2.THRESH_BINARY + cv2.THRESH_OTSU\n",
+    ")\n",
+    "print(\"Chosen threshold:\", otsu_value)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 49. Adaptive threshold — WHAT / WHEN\n",
+    "Use adaptive thresholding when illumination is uneven because each local neighborhood gets its own threshold."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adaptive = cv2.adaptiveThreshold(\n",
+    "    gray, 255,\n",
+    "    cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\n",
+    "    cv2.THRESH_BINARY,\n",
+    "    11, 2\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 50. CLAHE — WHAT / WHEN\n",
+    "Use CLAHE when local contrast needs improvement while limiting excessive contrast amplification."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))\n",
+    "enhanced = clahe.apply(gray)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 51. False-color mapping — WHAT / WHEN\n",
+    "Use `applyColorMap()` to visualize grayscale intensity as colors, such as a JET heatmap."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "heatmap = cv2.applyColorMap(gray, cv2.COLORMAP_JET)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 52. Weighted image fusion — WHAT / WHEN\n",
+    "Use `addWeighted()` when two aligned images should be combined with chosen contributions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fused = cv2.addWeighted(ct_color, 0.65, mri_color, 0.35, 0)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 53. Simple color balance — WHAT / WHEN\n",
+    "Use channel means to reduce unwanted color cast when processing a color image."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "b, g, r = cv2.split(image.astype(np.float32))\n",
+    "mean_b, mean_g, mean_r = np.mean(b), np.mean(g), np.mean(r)\n",
+    "target = (mean_b + mean_g + mean_r) / 3\n",
+    "b *= target / (mean_b + 1e-6)\n",
+    "g *= target / (mean_g + 1e-6)\n",
+    "r *= target / (mean_r + 1e-6)\n",
+    "balanced = cv2.merge([b, g, r])\n",
+    "balanced = np.clip(balanced, 0, 255).astype(np.uint8)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# LAB 2 / GEOMETRIC TRANSFORMATIONS"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 54. Rotation matrix — WHAT / WHEN\n",
+    "Use `getRotationMatrix2D()` to rotate an image around a chosen center with optional scaling."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "h, w = image.shape[:2]\n",
+    "center = (w / 2, h / 2)\n",
+    "M = cv2.getRotationMatrix2D(center, 45, 0.8)\n",
+    "rotated = cv2.warpAffine(image, M, (w, h))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 55. Affine transformation — WHAT / WHEN\n",
+    "Use `warpAffine()` with a 2×3 matrix for rotation, translation, scaling, shear, or combinations of these."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "M = np.float32([[1, 0, 100],\n",
+    "                [0, 1, 50]])\n",
+    "shifted = cv2.warpAffine(image, M, (w + 100, h + 50))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 56. Translation matrix — WHAT / WHEN\n",
+    "Use a translation matrix to move an image horizontally/vertically without changing its shape."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tx, ty = 150, 80\n",
+    "M = np.float32([[1, 0, tx],\n",
+    "                [0, 1, ty]])\n",
+    "translated = cv2.warpAffine(image, M, (w + tx, h + ty))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 57. Homogeneous translation matrix — WHAT / WHEN\n",
+    "Use a 3×3 homogeneous matrix when transformations are represented together and processed with perspective functions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "T = np.array([\n",
+    "    [1, 0, tx],\n",
+    "    [0, 1, ty],\n",
+    "    [0, 0, 1]\n",
+    "], dtype=np.float32)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 58. Scaling matrix — WHAT / WHEN\n",
+    "Use scaling matrices when you need explicit control over x/y scale factors."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sx, sy = 3, 3\n",
+    "S = np.array([\n",
+    "    [sx, 0, 0],\n",
+    "    [0, sy, 0],\n",
+    "    [0, 0, 1]\n",
+    "], dtype=np.float32)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 59. Shear transformation — WHAT / WHEN\n",
+    "Use a shear matrix to slant/skew an image horizontally or vertically."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "shear = -0.30\n",
+    "M = np.float32([\n",
+    "    [1, shear, 0],\n",
+    "    [0, 1, 0]\n",
+    "])\n",
+    "sheared = cv2.warpAffine(image, M, (new_w, h))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 60. Rigid transformation — WHAT / WHEN\n",
+    "Use rigid transformation when the object should only rotate and translate, not scale or shear."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "theta = np.deg2rad(-30)\n",
+    "R = np.array([\n",
+    "    [np.cos(theta), -np.sin(theta), 0],\n",
+    "    [np.sin(theta),  np.cos(theta), 0],\n",
+    "    [0, 0, 1]\n",
+    "], dtype=np.float32)\n",
+    "\n",
+    "T = np.array([\n",
+    "    [1, 0, tx],\n",
+    "    [0, 1, ty],\n",
+    "    [0, 0, 1]\n",
+    "], dtype=np.float32)\n",
+    "\n",
+    "M = T @ R"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 61. Matrix multiplication `@` — WHAT / WHEN\n",
+    "Use `@` to compose transformation matrices; order matters because matrix multiplication is not generally commutative."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "combined = T @ R   # rotation first, then translation under column-vector convention"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 62. `warpAffine()` — WHAT / WHEN\n",
+    "Use it with a 2×3 affine matrix for rotation, translation, scaling, and shear."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "warped = cv2.warpAffine(image, M[:2], (output_w, output_h))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 63. Perspective transform from 4 points — WHAT / WHEN\n",
+    "Use `getPerspectiveTransform()` when four source corners must map to four destination corners, such as a document or bird's-eye view."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "src = np.float32([\n",
+    "    [100, 100], [500, 120],\n",
+    "    [550, 500], [80, 480]\n",
+    "])\n",
+    "dst = np.float32([\n",
+    "    [0, 0], [599, 0],\n",
+    "    [599, 599], [0, 599]\n",
+    "])\n",
+    "H = cv2.getPerspectiveTransform(src, dst)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 64. `warpPerspective()` — WHAT / WHEN\n",
+    "Use it with a 3×3 homography to apply perspective/projective warping."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bird_eye = cv2.warpPerspective(image, H, (600, 600))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 65. `perspectiveTransform()` — WHAT / WHEN\n",
+    "Use it to transform points/corners using a homography, especially for object localization or stitching."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "points = np.float32([[[0, 0], [w-1, 0], [w-1, h-1], [0, h-1]]])\n",
+    "projected = cv2.perspectiveTransform(points, H)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# LAB 3 — FILTERING, EDGES & FEATURES"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 66. Kernel — WHAT / WHEN\n",
+    "A kernel is a small matrix that slides over an image for filtering, smoothing, sharpening, or edge detection."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "kernel = np.array([\n",
+    "    [1, 0, -1],\n",
+    "    [2, 0, -2],\n",
+    "    [1, 0, -1]\n",
+    "], dtype=np.float32)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 67. `filter2D()` — WHAT / WHEN\n",
+    "Use it to apply a custom convolution/filter kernel to an image."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "result = cv2.filter2D(gray, -1, kernel)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 68. Box blur kernel — WHAT / WHEN\n",
+    "Use an equal-weight kernel to average a local neighborhood and smooth noise."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "kernel = np.ones((3, 3), np.float32) / 9\n",
+    "blurred = cv2.filter2D(image, -1, kernel)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 69. Valid convolution concept — WHAT / WHEN\n",
+    "Use true valid convolution when no padding is wanted and only positions where the kernel fully fits should be calculated."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Conceptual NumPy implementation for a 3x3 kernel:\n",
+    "H, W = gray.shape\n",
+    "k = kernel.shape[0]\n",
+    "valid = np.empty((H-k+1, W-k+1), dtype=np.float32)\n",
+    "for y in range(H-k+1):\n",
+    "    for x in range(W-k+1):\n",
+    "        valid[y, x] = np.sum(gray[y:y+k, x:x+k] * kernel)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 70. Same convolution concept — WHAT / WHEN\n",
+    "Use same convolution when output height/width should remain equal to the input by padding the boundaries."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "same = cv2.filter2D(gray, -1, kernel, borderType=cv2.BORDER_CONSTANT)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 71. Sobel X/Y — WHAT / WHEN\n",
+    "Use Sobel to calculate intensity gradients in horizontal/vertical directions and detect edges."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)\n",
+    "gy = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 72. Gradient magnitude & direction — WHAT / WHEN\n",
+    "Use magnitude for edge strength and `arctan2` for edge/gradient orientation."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "magnitude = np.sqrt(gx**2 + gy**2)\n",
+    "direction = np.arctan2(gy, gx)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 73. Sobel threshold edge map — WHAT / WHEN\n",
+    "Use a magnitude threshold to keep only strong gradients as binary edges."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "threshold = 100\n",
+    "edges = (magnitude > threshold).astype(np.uint8) * 255"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 74. Canny edge detection — WHAT / WHEN\n",
+    "Use Canny for a thin, structured edge map after noise reduction."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "blurred = cv2.GaussianBlur(gray, (5, 5), 1)\n",
+    "edges = cv2.Canny(blurred, 50, 120)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 75. Canny low/high thresholds — WHAT / WHEN\n",
+    "Use the low/high thresholds to control weak/strong edge selection; lower thresholds usually keep more edges/noise."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "edges = cv2.Canny(gray, 30, 80)\n",
+    "edges = cv2.Canny(gray, 50, 200)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 76. Laplacian / LoG — WHAT / WHEN\n",
+    "Use Laplacian after Gaussian smoothing when second-derivative edge information is required."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "blurred = cv2.GaussianBlur(gray, (5, 5), 1.4)\n",
+    "laplacian = cv2.Laplacian(blurred, cv2.CV_64F)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 77. HOG — WHAT / WHEN\n",
+    "Use HOG as a gradient-based descriptor for object shape/edge structure."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from skimage.feature import hog\n",
+    "from skimage import exposure\n",
+    "\n",
+    "features, hog_image = hog(\n",
+    "    gray,\n",
+    "    pixels_per_cell=(8, 8),\n",
+    "    cells_per_block=(2, 2),\n",
+    "    visualize=True\n",
+    ")\n",
+    "hog_vis = exposure.rescale_intensity(hog_image, in_range=(0, 10))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 78. LBP — WHAT / WHEN\n",
+    "Use LBP as a texture descriptor by comparing neighboring pixels with a center pixel."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from skimage import feature\n",
+    "\n",
+    "radius = 1\n",
+    "n_points = 8 * radius\n",
+    "lbp = feature.local_binary_pattern(\n",
+    "    gray, n_points, radius, method=\"uniform\"\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 79. LBP histogram — WHAT / WHEN\n",
+    "Use the LBP histogram as a numerical texture feature vector."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "hist, _ = np.histogram(\n",
+    "    lbp.ravel(),\n",
+    "    bins=np.arange(0, n_points + 3),\n",
+    "    range=(0, n_points + 2)\n",
+    ")\n",
+    "hist = hist.astype(float)\n",
+    "hist /= (hist.sum() + 1e-6)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 80. Histogram of Edge Directions — WHAT / WHEN\n",
+    "Use it to summarize how frequently gradient/edge directions occur in an image."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "orientation_deg = np.degrees(np.arctan2(gy, gx)) % 360\n",
+    "hist, bin_edges = np.histogram(\n",
+    "    orientation_deg,\n",
+    "    bins=8,\n",
+    "    range=(0, 360)\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 81. Texture energy — WHAT / WHEN\n",
+    "Use local squared intensity sums as a simple measure of local texture/intensity energy."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "energy = cv2.filter2D(\n",
+    "    gray.astype(np.float32) ** 2,\n",
+    "    -1,\n",
+    "    np.ones((3, 3), np.float32)\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 82. Color histogram — WHAT / WHEN\n",
+    "Use a color histogram to describe how frequently color combinations occur."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "color_hist = cv2.calcHist(\n",
+    "    [image], [0, 1, 2], None,\n",
+    "    [8, 8, 8],\n",
+    "    [0, 256, 0, 256, 0, 256]\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# LAB 4 — IMAGE SEGMENTATION"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 83. Global threshold segmentation — WHAT / WHEN\n",
+    "Use a single threshold to separate foreground/background when illumination is reasonably uniform."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "_, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 84. Adaptive Gaussian threshold — WHAT / WHEN\n",
+    "Use it when different parts of an image have different illumination."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adaptive = cv2.adaptiveThreshold(\n",
+    "    gray, 255,\n",
+    "    cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\n",
+    "    cv2.THRESH_BINARY,\n",
+    "    11, 2\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 85. Otsu after preprocessing — WHAT / WHEN\n",
+    "Use Otsu after contrast enhancement such as CLAHE when you want an automatically selected global threshold."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))\n",
+    "enhanced = clahe.apply(gray)\n",
+    "otsu_value, mask = cv2.threshold(\n",
+    "    enhanced, 0, 255,\n",
+    "    cv2.THRESH_BINARY + cv2.THRESH_OTSU\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 86. HSV conversion — WHAT / WHEN\n",
+    "Use HSV when segmentation depends on color because hue separates color identity from brightness more naturally than BGR."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 87. HSV `inRange()` — WHAT / WHEN\n",
+    "Use `inRange()` to create a binary mask for a chosen HSV color interval."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "mask = cv2.inRange(\n",
+    "    hsv,\n",
+    "    np.array([5, 100, 100]),\n",
+    "    np.array([25, 255, 255])\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 88. HSV restrictive + wider mask — WHAT / WHEN\n",
+    "Use a narrow range for confident pixels and a wider range when the target color varies."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "restrict = cv2.inRange(\n",
+    "    hsv, np.array([12,180,180]), np.array([18,255,255])\n",
+    ")\n",
+    "final = cv2.inRange(\n",
+    "    hsv, np.array([5,100,100]), np.array([25,255,255])\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 89. Morphological opening — WHAT / WHEN\n",
+    "Use opening (erosion then dilation) to remove small foreground noise."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "k = np.ones((3,3), np.uint8)\n",
+    "opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 90. Morphological closing — WHAT / WHEN\n",
+    "Use closing (dilation then erosion) to fill small holes/gaps and connect nearby foreground regions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 91. Bitwise AND mask — WHAT / WHEN\n",
+    "Use `bitwise_and` to keep only the pixels inside a mask."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "selected = cv2.bitwise_and(image, image, mask=mask)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 92. Bitwise NOT mask — WHAT / WHEN\n",
+    "Use `bitwise_not` to invert a binary mask and select the opposite region."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "inverse_mask = cv2.bitwise_not(mask)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 93. Bitwise OR combine — WHAT / WHEN\n",
+    "Use `bitwise_or` to combine complementary masked regions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "combined = cv2.bitwise_or(part1, part2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 94. Contours — WHAT / WHEN\n",
+    "Use contours to extract object boundaries from a binary/foreground mask."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "contours, hierarchy = cv2.findContours(\n",
+    "    mask,\n",
+    "    cv2.RETR_EXTERNAL,\n",
+    "    cv2.CHAIN_APPROX_SIMPLE\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 95. Contour area — WHAT / WHEN\n",
+    "Use `contourArea()` to reject tiny noise and keep meaningful objects."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for c in contours:\n",
+    "    area = cv2.contourArea(c)\n",
+    "    if area < 1200:\n",
+    "        continue"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 96. Region growing — WHAT / WHEN\n",
+    "Use region growing when an object can be expanded from a seed based on intensity similarity."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from collections import deque\n",
+    "\n",
+    "def grow_region(gray, seed, tolerance):\n",
+    "    h, w = gray.shape\n",
+    "    sy, sx = seed\n",
+    "    ref = int(gray[sy, sx])\n",
+    "    q = deque([seed])\n",
+    "    seen = np.zeros((h, w), dtype=bool)\n",
+    "    mask = np.zeros((h, w), dtype=np.uint8)\n",
+    "    seen[sy, sx] = True\n",
+    "\n",
+    "    while q:\n",
+    "        y, x = q.popleft()\n",
+    "        if abs(int(gray[y, x]) - ref) <= tolerance:\n",
+    "            mask[y, x] = 255\n",
+    "            for dy in (-1, 0, 1):\n",
+    "                for dx in (-1, 0, 1):\n",
+    "                    if dy == 0 and dx == 0:\n",
+    "                        continue\n",
+    "                    ny, nx = y + dy, x + dx\n",
+    "                    if 0 <= ny < h and 0 <= nx < w and not seen[ny, nx]:\n",
+    "                        seen[ny, nx] = True\n",
+    "                        q.append((ny, nx))\n",
+    "    return mask"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 97. Region-growing seed/tolerance — WHAT / WHEN\n",
+    "Use a good seed inside the desired object; smaller tolerance is stricter, while larger tolerance can cause leakage."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "seed = (342, 213)   # (y, x)\n",
+    "mask = grow_region(gray, seed, tolerance=15)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 98. Distance transform — WHAT / WHEN\n",
+    "Use distance transform to find pixels' distance from the nearest background; object centers tend to have larger values and are useful for watershed markers."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dist = cv2.distanceTransform(binary, cv2.DIST_L2, 5)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 99. Watershed sure foreground — WHAT / WHEN\n",
+    "Threshold the distance map to keep confident object cores before watershed."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "_, sure_fg = cv2.threshold(\n",
+    "    dist, 0.5 * dist.max(), 255, 0\n",
+    ")\n",
+    "sure_fg = np.uint8(sure_fg)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 100. Watershed sure background — WHAT / WHEN\n",
+    "Use dilation of the binary foreground to obtain a region confidently belonging to background."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "kernel = np.ones((3,3), np.uint8)\n",
+    "sure_bg = cv2.dilate(binary, kernel, iterations=3)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 101. Watershed unknown region — WHAT / WHEN\n",
+    "Subtract sure foreground from sure background to identify uncertain pixels around object boundaries."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "unknown = cv2.subtract(sure_bg, sure_fg)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 102. Connected components / watershed markers — WHAT / WHEN\n",
+    "Use connected components to give each sure foreground object a unique marker label before watershed."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "num_labels, markers = cv2.connectedComponents(sure_fg)\n",
+    "markers = markers + 1\n",
+    "markers[unknown == 255] = 0"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 103. Apply watershed — WHAT / WHEN\n",
+    "Use watershed to separate touching/connected objects using the marker regions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bgr = image.copy()\n",
+    "markers = cv2.watershed(bgr, markers)\n",
+    "boundaries = markers == -1"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 104. Watershed distance-threshold experiment — WHAT / WHEN\n",
+    "Test several fractions of `dist.max()` to find a stable number of object markers/separated regions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for f in [0.3, 0.4, 0.5, 0.6]:\n",
+    "    _, fg = cv2.threshold(dist, f * dist.max(), 255, 0)\n",
+    "    fg = np.uint8(fg)\n",
+    "    n, markers = cv2.connectedComponents(fg)\n",
+    "    print(\"fraction:\", f, \"foreground markers:\", n - 1)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 105. K-Means image segmentation — WHAT / WHEN\n",
+    "Use K-Means when you want to group pixels into a chosen number of color/intensity clusters."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "data = np.float32(image.reshape((-1, 3)))\n",
+    "\n",
+    "criteria = (\n",
+    "    cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,\n",
+    "    100,\n",
+    "    0.2\n",
+    ")\n",
+    "\n",
+    "K = 4\n",
+    "compactness, labels, centers = cv2.kmeans(\n",
+    "    data, K, None, criteria, 10,\n",
+    "    cv2.KMEANS_PP_CENTERS\n",
+    ")\n",
+    "\n",
+    "centers = np.uint8(centers)\n",
+    "segmented = centers[labels.flatten()].reshape(image.shape)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 106. K-Means parameters — WHAT / WHEN\n",
+    "`K` = number of clusters; `criteria` = stopping rule; `attempts` = repeated initializations; K-Means++ improves starting centers."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "K = 2   # stronger simplification\n",
+    "K = 4   # medium\n",
+    "K = 6   # more color detail"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 107. Global vs Canny vs K-Means — WHAT / WHEN\n",
+    "Use global threshold for intensity separation, Canny for boundaries, and K-Means for color similarity; they solve different segmentation/detection problems."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "global_mask = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)[1]\n",
+    "edges = cv2.Canny(cv2.GaussianBlur(gray, (5,5), 1), 50, 120)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# LAB 5 — WAVELETS, BOUNDARIES, HOUGH & SIFT"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 108. Discrete Wavelet Transform — WHAT / WHEN\n",
+    "Use DWT to decompose a signal/image into approximation and detail information at multiple scales, useful for denoising and analysis."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pywt\n",
+    "\n",
+    "coeffs = pywt.wavedec(signal, \"db4\", level=4)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 109. Wavelet coefficient structure — WHAT / WHEN\n",
+    "`wavedec()` returns approximation/detail coefficients; the last detail coefficients are high-frequency information useful for noise estimation."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "approximation = coeffs[0]\n",
+    "highest_detail = coeffs[-1]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 110. MAD noise estimate — WHAT / WHEN\n",
+    "Use the median absolute deviation of high-frequency wavelet detail coefficients for a robust noise estimate."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sigma = np.median(np.abs(highest_detail)) / 0.6745"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 111. Universal-like wavelet threshold — WHAT / WHEN\n",
+    "Use `sigma * sqrt(2 log N)` as a common noise threshold for wavelet denoising."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "N = len(signal)\n",
+    "threshold = sigma * np.sqrt(2 * np.log(N))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 112. Soft thresholding — WHAT / WHEN\n",
+    "Use soft thresholding to shrink small wavelet detail coefficients and reduce noise smoothly."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "thresholded_coeffs = [coeffs[0]]\n",
+    "for c in coeffs[1:]:\n",
+    "    thresholded_coeffs.append(\n",
+    "        pywt.threshold(c, threshold, mode=\"soft\")\n",
+    "    )"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 113. Wavelet reconstruction — WHAT / WHEN\n",
+    "Use `waverec()` to reconstruct a denoised signal from thresholded coefficients."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "denoised = pywt.waverec(thresholded_coeffs, \"db4\")\n",
+    "denoised = denoised[:len(signal)]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 114. Residual for anomaly detection — WHAT / WHEN\n",
+    "Use original minus denoised signal so unusual high-frequency events become large residuals."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "residual = signal - denoised"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 115. Robust anomaly threshold — WHAT / WHEN\n",
+    "Use median/MAD residual statistics when outliers should not strongly distort the estimated noise level."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "res_med = np.median(residual)\n",
+    "mad = np.median(np.abs(residual - res_med))\n",
+    "robust_sigma = 1.4826 * mad\n",
+    "anomaly_threshold = 3.5 * robust_sigma\n",
+    "anomalies = np.where(\n",
+    "    np.abs(residual - res_med) > anomaly_threshold\n",
+    ")[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 116. Sobel boundary detection — WHAT / WHEN\n",
+    "Use Sobel magnitude to identify strong intensity boundaries before geometric detection."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)\n",
+    "gy = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)\n",
+    "mag = np.sqrt(gx**2 + gy**2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 117. Probabilistic Hough Lines — WHAT / WHEN\n",
+    "Use `HoughLinesP()` to detect line segments from an edge image, such as road/lane boundaries."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lines = cv2.HoughLinesP(\n",
+    "    edges,\n",
+    "    1,\n",
+    "    np.pi / 180,\n",
+    "    threshold=45,\n",
+    "    minLineLength=40,\n",
+    "    maxLineGap=120\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 118. Hough line parameters — WHAT / WHEN\n",
+    "`rho` is distance resolution, `theta` is angle resolution in radians, `threshold` is minimum votes, and length/gap control segment filtering."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 1 pixel rho, 1 degree theta:\n",
+    "theta_resolution = np.pi / 180"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 119. Hough line segment unpacking — WHAT / WHEN\n",
+    "Use `(x1,y1,x2,y2)` to access the endpoints returned by `HoughLinesP()`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "if lines is not None:\n",
+    "    for line in lines:\n",
+    "        x1, y1, x2, y2 = line[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 120. Line slope — WHAT / WHEN\n",
+    "Use slope to separate approximately straight left/right lane candidates."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "if x2 != x1:\n",
+    "    slope = (y2 - y1) / (x2 - x1)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 121. Line equation / extrapolation — WHAT / WHEN\n",
+    "Use `y = mx + b` and solve `x = (y-b)/m` to extend detected short lane segments."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "m = (y2 - y1) / (x2 - x1)\n",
+    "b = y1 - m * x1\n",
+    "x_at_y = (target_y - b) / m"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 122. Hough circles — WHAT / WHEN\n",
+    "Use `HoughCircles()` to detect approximately circular objects such as coins."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "circles = cv2.HoughCircles(\n",
+    "    gray,\n",
+    "    cv2.HOUGH_GRADIENT,\n",
+    "    dp=1.2,\n",
+    "    minDist=35,\n",
+    "    param1=120,\n",
+    "    param2=30,\n",
+    "    minRadius=15,\n",
+    "    maxRadius=100\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 123. Hough circle result `(x,y,r)` — WHAT / WHEN\n",
+    "Use the returned center and radius to draw, count, and label detected circles."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "if circles is not None:\n",
+    "    circles = np.uint16(np.around(circles[0]))\n",
+    "    for x, y, r in circles:\n",
+    "        cv2.circle(result, (x, y), r, (0,255,0), 3)\n",
+    "        cv2.circle(result, (x, y), 3, (0,0,255), -1)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 124. Hough circle `param2` — WHAT / WHEN\n",
+    "Increase `param2` for stricter circle detection; decrease it to detect more circles but risk false positives."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Example tuning:\n",
+    "# param2=25  -> more permissive\n",
+    "# param2=35  -> more strict"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 125. SIFT creation — WHAT / WHEN\n",
+    "Use SIFT when distinctive local features are needed for matching, recognition, tracking, or stitching."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sift = cv2.SIFT_create(nfeatures=1800)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 126. SIFT keypoints & descriptors — WHAT / WHEN\n",
+    "`detectAndCompute()` finds interesting image locations and creates numerical descriptors for them."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "kp, des = sift.detectAndCompute(gray, None)\n",
+    "print(\"keypoints:\", len(kp))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 127. Keypoint vs descriptor — WHAT / WHEN\n",
+    "A keypoint is a feature location; a descriptor is the numerical vector describing the local appearance around that location."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# keypoint location:\n",
+    "point = kp[0].pt\n",
+    "# descriptor:\n",
+    "vector = des[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 128. FLANN matcher — WHAT / WHEN\n",
+    "Use FLANN for fast approximate nearest-neighbor matching between SIFT descriptors."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "FLANN_INDEX_KDTREE = 1\n",
+    "index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)\n",
+    "search_params = dict(checks=60)\n",
+    "flann = cv2.FlannBasedMatcher(index_params, search_params)\n",
+    "\n",
+    "matches = flann.knnMatch(des1, des2, k=2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 129. Lowe ratio test — WHAT / WHEN\n",
+    "Use the ratio between the best and second-best match to reject ambiguous feature matches."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "good = []\n",
+    "for m, n in matches:\n",
+    "    if m.distance < 0.72 * n.distance:\n",
+    "        good.append(m)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 130. Homography with RANSAC — WHAT / WHEN\n",
+    "Use homography + RANSAC when matched points should map one planar view to another while rejecting incorrect matches."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)\n",
+    "dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)\n",
+    "\n",
+    "H, mask = cv2.findHomography(\n",
+    "    src_pts, dst_pts,\n",
+    "    cv2.RANSAC, 5.0\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 131. Inliers & inlier ratio — WHAT / WHEN\n",
+    "Use RANSAC's inlier mask to measure how many matches agree with the estimated geometric transformation."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "inlier_count = int(mask.sum()) if mask is not None else 0\n",
+    "inlier_ratio = inlier_count / max(len(good), 1)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 132. Project reference corners — WHAT / WHEN\n",
+    "Use `perspectiveTransform()` to locate the reference object's four corners in the target image/frame."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "h_ref, w_ref = reference.shape[:2]\n",
+    "box = np.float32([\n",
+    "    [[0,0], [w_ref-1,0],\n",
+    "     [w_ref-1,h_ref-1], [0,h_ref-1]]\n",
+    "])\n",
+    "scene_box = cv2.perspectiveTransform(box, H)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 133. Draw detected quadrilateral — WHAT / WHEN\n",
+    "Use `polylines()` to draw the projected object boundary after successful matching."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cv2.polylines(\n",
+    "    scene,\n",
+    "    [np.int32(scene_box)],\n",
+    "    True,\n",
+    "    (0,255,0),\n",
+    "    3\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 134. OpenCV Stitcher — WHAT / WHEN\n",
+    "Use `Stitcher_create(PANORAMA)` when overlapping images need automatic feature matching, alignment, warping, and blending."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)\n",
+    "status, panorama = stitcher.stitch([left, right])\n",
+    "\n",
+    "if status != cv2.Stitcher_OK:\n",
+    "    print(\"Stitching failed:\", status)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 135. Crop black panorama borders — WHAT / WHEN\n",
+    "Use a non-black mask + `findNonZero()` + `boundingRect()` to remove empty borders after stitching."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gray_pano = cv2.cvtColor(panorama, cv2.COLOR_BGR2GRAY)\n",
+    "mask = (gray_pano > 1).astype(np.uint8) * 255\n",
+    "pts = cv2.findNonZero(mask)\n",
+    "\n",
+    "if pts is not None:\n",
+    "    x, y, w, h = cv2.boundingRect(pts)\n",
+    "    cropped = panorama[y:y+h, x:x+w]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# APPLIED LAB 2 — MEDICAL IMAGE ENHANCEMENT & VIDEO"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 136. X-ray enhancement pipeline — WHAT / WHEN\n",
+    "Use equalization, false color, thresholding, log, and gamma transformations when the task asks for multiple contrast/intensity visualizations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "xray = cv2.imread(\"xray.png\", cv2.IMREAD_GRAYSCALE)\n",
+    "eq = cv2.equalizeHist(xray)\n",
+    "jet = cv2.applyColorMap(eq, cv2.COLORMAP_JET)\n",
+    "\n",
+    "_, dense = cv2.threshold(eq, 200, 255, cv2.THRESH_BINARY)\n",
+    "log_xray = cv2.normalize(\n",
+    "    np.log1p(xray.astype(np.float32)),\n",
+    "    None, 0, 255, cv2.NORM_MINMAX\n",
+    ").astype(np.uint8)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 137. CT/MRI fusion pipeline — WHAT / WHEN\n",
+    "Use when two aligned modalities should be visually combined while preserving more information from the primary modality."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ct = cv2.imread(\"ct.png\", cv2.IMREAD_GRAYSCALE)\n",
+    "mri = cv2.imread(\"mri.png\", cv2.IMREAD_GRAYSCALE)\n",
+    "\n",
+    "mri = cv2.resize(mri, (ct.shape[1], ct.shape[0]))\n",
+    "ct_eq = cv2.equalizeHist(ct)\n",
+    "mri_eq = cv2.equalizeHist(mri)\n",
+    "\n",
+    "ct_color = cv2.applyColorMap(ct_eq, cv2.COLORMAP_BONE)\n",
+    "mri_color = cv2.applyColorMap(mri_eq, cv2.COLORMAP_JET)\n",
+    "\n",
+    "fused = cv2.addWeighted(ct_color, 0.65, mri_color, 0.35, 0)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 138. Real-time video capture — WHAT / WHEN\n",
+    "Use `VideoCapture` + a frame loop when processing each video frame continuously."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cap = cv2.VideoCapture(\"video.mp4\")\n",
+    "while True:\n",
+    "    ok, frame = cap.read()\n",
+    "    if not ok:\n",
+    "        break\n",
+    "\n",
+    "    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)\n",
+    "    enhanced = cv2.equalizeHist(gray)\n",
+    "\n",
+    "    cv2.imshow(\"Enhanced\", enhanced)\n",
+    "    if cv2.waitKey(25) & 0xFF == ord(\"q\"):\n",
+    "        break\n",
+    "\n",
+    "cap.release()\n",
+    "cv2.destroyAllWindows()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 139. `hconcat()` — WHAT / WHEN\n",
+    "Use `hconcat()` to place raw and processed frames side-by-side."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "left = cv2.resize(frame, (320, 240))\n",
+    "right = cv2.resize(enhanced, (320, 240))\n",
+    "side_by_side = cv2.hconcat([left, right])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# LAB 6 — APPLIED DETECTION / VIDEO TASKS"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 140. Region of Interest (ROI) mask — WHAT / WHEN\n",
+    "Use a polygon mask to keep only the useful part of an image, such as the road area for lane detection."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "mask = np.zeros_like(edges)\n",
+    "roi = np.array([[\n",
+    "    (100, 700), (400, 420),\n",
+    "    (600, 420), (900, 700)\n",
+    "]], dtype=np.int32)\n",
+    "\n",
+    "cv2.fillPoly(mask, roi, 255)\n",
+    "roi_edges = cv2.bitwise_and(edges, mask)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 141. Lane detection pipeline — WHAT / WHEN\n",
+    "Use Canny + road ROI + HoughLinesP + slope filtering when approximately straight lane boundaries must be detected."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gray = cv2.cvtColor(road, cv2.COLOR_BGR2GRAY)\n",
+    "blur = cv2.GaussianBlur(gray, (5,5), 1)\n",
+    "edges = cv2.Canny(blur, 50, 120)\n",
+    "\n",
+    "# then ROI mask\n",
+    "lines = cv2.HoughLinesP(\n",
+    "    roi_edges, 1, np.pi/180,\n",
+    "    threshold=45,\n",
+    "    minLineLength=40,\n",
+    "    maxLineGap=120\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 142. Left/right lane separation — WHAT / WHEN\n",
+    "Use line slope to separate candidate lane segments into left and right groups."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "left_lines, right_lines = [], []\n",
+    "\n",
+    "if lines is not None:\n",
+    "    for line in lines:\n",
+    "        x1, y1, x2, y2 = line[0]\n",
+    "        if x2 == x1:\n",
+    "            continue\n",
+    "        slope = (y2-y1)/(x2-x1)\n",
+    "        if abs(slope) < 0.45:\n",
+    "            continue\n",
+    "        if slope < 0:\n",
+    "            left_lines.append((x1,y1,x2,y2))\n",
+    "        else:\n",
+    "            right_lines.append((x1,y1,x2,y2))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 143. Coin counting pipeline — WHAT / WHEN\n",
+    "Use grayscale + median blur + HoughCircles when objects are approximately circular and their radii are known."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gray = cv2.cvtColor(coin_img, cv2.COLOR_BGR2GRAY)\n",
+    "gray = cv2.medianBlur(gray, 7)\n",
+    "\n",
+    "circles = cv2.HoughCircles(\n",
+    "    gray, cv2.HOUGH_GRADIENT,\n",
+    "    dp=1.2, minDist=35,\n",
+    "    param1=120, param2=30,\n",
+    "    minRadius=15, maxRadius=100\n",
+    ")\n",
+    "\n",
+    "count = 0 if circles is None else len(circles[0])\n",
+    "print(\"Total coins:\", count)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 144. Security background subtraction — WHAT / WHEN\n",
+    "Use MOG2 when a mostly fixed-camera video needs newly introduced/moving objects detected against a learned background."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sub = cv2.createBackgroundSubtractorMOG2(\n",
+    "    history=300,\n",
+    "    varThreshold=35,\n",
+    "    detectShadows=True\n",
+    ")\n",
+    "\n",
+    "fg = sub.apply(frame)\n",
+    "fg[fg == 127] = 0"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 145. Security foreground cleanup — WHAT / WHEN\n",
+    "Use opening to remove small motion noise and closing to fill/merge foreground regions before contours."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "k = np.ones((5,5), np.uint8)\n",
+    "fg = cv2.morphologyEx(fg, cv2.MORPH_OPEN, k, iterations=1)\n",
+    "fg = cv2.morphologyEx(fg, cv2.MORPH_CLOSE, k, iterations=2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 146. Security object bounding box — WHAT / WHEN\n",
+    "Use contour area filtering + `boundingRect()` to localize meaningful moving objects."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "contours, _ = cv2.findContours(\n",
+    "    fg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE\n",
+    ")\n",
+    "\n",
+    "for c in contours:\n",
+    "    if cv2.contourArea(c) < 1200:\n",
+    "        continue\n",
+    "    x, y, w, h = cv2.boundingRect(c)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 147. Rectangle intersection test — WHAT / WHEN\n",
+    "Use rectangle overlap to trigger an alarm when a detected object's bounding box enters a predefined security zone."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "intersection_width = max(0, min(x+w, zx2) - max(x, zx1))\n",
+    "intersection_height = max(0, min(y+h, zy2) - max(y, zy1))\n",
+    "intersection_area = intersection_width * intersection_height\n",
+    "\n",
+    "alarm = intersection_area > 0"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 148. Security video output — WHAT / WHEN\n",
+    "Use `VideoWriter` to save annotated frames and counters to an output video."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fourcc = cv2.VideoWriter_fourcc(*\"mp4v\")\n",
+    "out = cv2.VideoWriter(\n",
+    "    \"security_output.mp4\",\n",
+    "    fourcc,\n",
+    "    fps,\n",
+    "    (W, H)\n",
+    ")\n",
+    "# each frame:\n",
+    "# out.write(frame)\n",
+    "# finally:\n",
+    "# cap.release()\n",
+    "# out.release()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# COMMON CV PATTERNS"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 149. Create a binary mask — WHAT / WHEN\n",
+    "Use a `uint8` array with 0/255 values to select image regions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "mask = np.zeros(gray.shape, dtype=np.uint8)\n",
+    "mask[100:300, 200:400] = 255"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 150. Apply a mask — WHAT / WHEN\n",
+    "Use a binary mask when only a selected region should remain visible."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "selected = cv2.bitwise_and(image, image, mask=mask)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 151. Find external contours — WHAT / WHEN\n",
+    "Use `RETR_EXTERNAL` when only the outer object boundaries matter."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "contours, _ = cv2.findContours(\n",
+    "    mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 152. Bounding rectangle — WHAT / WHEN\n",
+    "Use it for object localization and simple collision/intersection tests."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x, y, w, h = cv2.boundingRect(contour)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 153. Polygon drawing — WHAT / WHEN\n",
+    "Use `polylines()` for projected quadrilaterals, lane shapes, or custom boundaries."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pts = np.int32([[100,100], [500,100], [500,400], [100,400]])\n",
+    "cv2.polylines(image, [pts], True, (0,255,0), 3)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 154. Subplots — WHAT / WHEN\n",
+    "Use Matplotlib subplots to compare original and processed results side-by-side."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(12, 5))\n",
+    "plt.subplot(1, 2, 1)\n",
+    "plt.imshow(gray, cmap=\"gray\")\n",
+    "plt.title(\"Original\")\n",
+    "plt.axis(\"off\")\n",
+    "\n",
+    "plt.subplot(1, 2, 2)\n",
+    "plt.imshow(result, cmap=\"gray\")\n",
+    "plt.title(\"Processed\")\n",
+    "plt.axis(\"off\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 155. `enumerate()` — WHAT / WHEN\n",
+    "Use it when you need both the index and value while looping through detections/results."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for i, value in enumerate([10, 20, 30], start=1):\n",
+    "    print(i, value)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 156. `len()` — WHAT / WHEN\n",
+    "Use it to count items such as keypoints, matches, contours, circles, or frames in a collection."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Keypoints:\", len(kp))\n",
+    "print(\"Matches:\", len(good))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 157. `min()` / `max()` — WHAT / WHEN\n",
+    "Use them for safe bounds, ROI dimensions, intersections, and parameter calculations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "roi_size = min(300, h, w)\n",
+    "intersection_width = max(0, min(x+w, zx2) - max(x, zx1))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 158. `round()` / `int()` — WHAT / WHEN\n",
+    "Use `int()` for pixel coordinates and `round()` when dimensions need sensible integer conversion."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x = int(0.3 * w)\n",
+    "new_w = int(round(w * 1.5))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 159. `np.float32()` point arrays — WHAT / WHEN\n",
+    "Use floating-point point arrays for OpenCV geometric transformations and homographies."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pts = np.float32([\n",
+    "    [100,100],\n",
+    "    [500,100],\n",
+    "    [500,500],\n",
+    "    [100,500]\n",
+    "])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 160. OpenCV BGR color tuples — WHAT / WHEN\n",
+    "Use BGR tuples when drawing with OpenCV; do not confuse them with RGB tuples used by Matplotlib."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "RED_BGR = (0, 0, 255)\n",
+    "GREEN_BGR = (0, 255, 0)\n",
+    "BLUE_BGR = (255, 0, 0)\n",
+    "WHITE_BGR = (255, 255, 255)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# ⭐ FUNCTION SIGNATURES TO MEMORIZE"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cv2.imread(path)\n",
+    "cv2.cvtColor(image, code)\n",
+    "cv2.resize(image, (w, h))\n",
+    "cv2.GaussianBlur(image, (5,5), sigma)\n",
+    "cv2.medianBlur(image, ksize)\n",
+    "\n",
+    "cv2.threshold(gray, threshold, 255, type)\n",
+    "cv2.adaptiveThreshold(gray, 255, method, type, blockSize, C)\n",
+    "cv2.equalizeHist(gray)\n",
+    "cv2.createCLAHE(clipLimit, tileGridSize)\n",
+    "\n",
+    "cv2.Sobel(gray, cv2.CV_64F, dx, dy, ksize=3)\n",
+    "cv2.Canny(image, low, high)\n",
+    "cv2.Laplacian(image, cv2.CV_64F)\n",
+    "\n",
+    "cv2.filter2D(image, ddepth, kernel)\n",
+    "cv2.addWeighted(src1, alpha, src2, beta, gamma)\n",
+    "\n",
+    "cv2.getRotationMatrix2D(center, angle, scale)\n",
+    "cv2.warpAffine(image, M, (w, h))\n",
+    "cv2.getPerspectiveTransform(src, dst)\n",
+    "cv2.warpPerspective(image, H, (w, h))\n",
+    "cv2.perspectiveTransform(points, H)\n",
+    "\n",
+    "cv2.inRange(hsv, lower, upper)\n",
+    "cv2.bitwise_and(a, b, mask=mask)\n",
+    "cv2.bitwise_not(mask)\n",
+    "cv2.bitwise_or(a, b)\n",
+    "\n",
+    "cv2.findContours(mask, mode, method)\n",
+    "cv2.contourArea(contour)\n",
+    "cv2.boundingRect(contour)\n",
+    "\n",
+    "cv2.HoughLinesP(...)\n",
+    "cv2.HoughCircles(...)\n",
+    "\n",
+    "cv2.SIFT_create()\n",
+    "sift.detectAndCompute(gray, None)\n",
+    "cv2.findHomography(src, dst, cv2.RANSAC, threshold)\n",
+    "\n",
+    "cv2.VideoCapture(path)\n",
+    "cap.read()\n",
+    "cv2.VideoWriter(...)\n",
+    "out.write(frame)\n",
+    "cap.release()\n",
+    "out.release()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# 🧠 TECHNIQUE → PROBLEM CHEAT SHEET\n",
+    "\n",
+    "| Problem | Use |\n",
+    "|---|---|\n",
+    "| Load image | `cv2.imread()` |\n",
+    "| Show OpenCV image in Matplotlib | BGR → RGB |\n",
+    "| Grayscale | `cv2.cvtColor(...BGR2GRAY)` |\n",
+    "| Resize | `cv2.resize()` |\n",
+    "| Crop | NumPy slicing |\n",
+    "| Reduce noise | Gaussian / median blur |\n",
+    "| Improve global contrast | Histogram equalization |\n",
+    "| Improve local contrast | CLAHE |\n",
+    "| Automatic global threshold | Otsu |\n",
+    "| Uneven lighting | Adaptive threshold |\n",
+    "| Segment by color | HSV + `inRange()` |\n",
+    "| Remove small mask noise | Opening |\n",
+    "| Fill mask gaps | Closing |\n",
+    "| Select mask region | Bitwise AND |\n",
+    "| Detect edges | Canny / Sobel |\n",
+    "| Second derivative | Laplacian |\n",
+    "| Shape descriptor | HOG |\n",
+    "| Texture descriptor | LBP |\n",
+    "| Local texture energy | Squared local sum |\n",
+    "| Rotate | `getRotationMatrix2D` + `warpAffine` |\n",
+    "| Translate | affine translation matrix |\n",
+    "| Shear | affine shear matrix |\n",
+    "| Perspective/document | homography + `warpPerspective` |\n",
+    "| Touching objects | Watershed |\n",
+    "| Color clusters | K-Means |\n",
+    "| Detect lines | `HoughLinesP()` |\n",
+    "| Detect circles | `HoughCircles()` |\n",
+    "| Feature matching | SIFT + FLANN |\n",
+    "| Reject bad matches | Lowe ratio + RANSAC |\n",
+    "| Panorama | Stitcher / homography |\n",
+    "| Signal denoising | Wavelets |\n",
+    "| Signal anomalies | residual + MAD |\n",
+    "| Video processing | `VideoCapture` + loop |\n",
+    "| Security zone | background subtraction + contours + intersection |"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# ⚠️ COMMON EXAM MISTAKES\n",
+    "\n",
+    "1. **OpenCV uses BGR**, Matplotlib normally displays RGB.\n",
+    "2. Pixel indexing is **`image[y, x]`**, not `image[x, y]`.\n",
+    "3. Grayscale image shape is `(H,W)`; color image is `(H,W,3)`.\n",
+    "4. Most Gaussian kernels are odd-sized: `3×3`, `5×5`, `7×7`.\n",
+    "5. `HoughLinesP()` returns line segments `(x1,y1,x2,y2)`.\n",
+    "6. `HoughCircles()` returns approximately `(x,y,r)`.\n",
+    "7. HOG → **shape/gradient orientation**; LBP → **texture**.\n",
+    "8. Sobel X and Y are gradient components; magnitude combines them.\n",
+    "9. Canny thresholds are low/high thresholds.\n",
+    "10. True **valid convolution** has no padding and produces a smaller output.\n",
+    "11. `cv2.filter2D()` normally keeps the output size; `BORDER_CONSTANT` is constant/zero border handling, **not true valid convolution**.\n",
+    "12. Perspective transform needs **4 corresponding point pairs**.\n",
+    "13. Homography is **3×3**; affine matrix is **2×3**.\n",
+    "14. K-Means needs pixels reshaped into rows such as `(-1,3)`.\n",
+    "15. SIFT: **keypoints = locations**, **descriptors = numerical descriptions**.\n",
+    "16. Homography with RANSAC needs at least **4 non-collinear point pairs**.\n",
+    "17. `param2` in Hough circles controls detection strictness.\n",
+    "18. Region growing depends strongly on the **seed** and **tolerance**.\n",
+    "19. Watershed needs meaningful markers; distance transform helps find object cores.\n",
+    "20. Always release videos with `cap.release()` and `out.release()`."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# 🔥 30-SECOND FINAL REVISION\n",
+    "\n",
+    "**Image:** array of pixels.\n",
+    "\n",
+    "**Preprocess:** grayscale → resize → blur.\n",
+    "\n",
+    "**Intensity:** threshold → equalization → log/gamma.\n",
+    "\n",
+    "**Edges:** Sobel / Canny / Laplacian.\n",
+    "\n",
+    "**Shape:** HOG / Hough.\n",
+    "\n",
+    "**Texture:** LBP.\n",
+    "\n",
+    "**Color:** HSV + `inRange()` / K-Means.\n",
+    "\n",
+    "**Segmentation:** threshold / region growing / watershed / K-Means.\n",
+    "\n",
+    "**Geometry:** affine = 2×3; perspective = 3×3.\n",
+    "\n",
+    "**Matching:** SIFT → descriptors → FLANN → Lowe ratio → RANSAC → homography.\n",
+    "\n",
+    "**Video:** `VideoCapture` → loop → process → `VideoWriter`.\n",
+    "\n",
+    "**Signal:** wavelet → denoise → residual → MAD → anomaly."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# ⭐ ONE-LINE VIVA ANSWERS\n",
+    "\n",
+    "**Convolution:** Sliding a kernel over an image and combining local pixel values.\n",
+    "\n",
+    "**Thresholding:** Separating pixels into groups using intensity conditions.\n",
+    "\n",
+    "**Segmentation:** Dividing an image into meaningful regions or objects.\n",
+    "\n",
+    "**Sobel:** Calculates image intensity gradients.\n",
+    "\n",
+    "**Canny:** Produces a thin, structured edge map using multi-stage edge detection.\n",
+    "\n",
+    "**HOG:** Describes shape using local gradient-orientation histograms.\n",
+    "\n",
+    "**LBP:** Describes texture using binary comparisons of neighboring pixels.\n",
+    "\n",
+    "**Watershed:** Separates touching objects using marker-based region growth.\n",
+    "\n",
+    "**K-Means:** Groups pixels into `K` clusters based on feature similarity.\n",
+    "\n",
+    "**Hough Transform:** Uses voting to detect parameterized geometric shapes.\n",
+    "\n",
+    "**SIFT:** Detects local features and creates descriptors robust to scale and rotation.\n",
+    "\n",
+    "**Homography:** A 3×3 projective mapping between two image planes.\n",
+    "\n",
+    "**RANSAC:** Estimates a model while rejecting outlier correspondences.\n",
+    "\n",
+    "**Wavelet:** Represents a signal at multiple scales/frequency components.\n",
+    "\n",
+    "**Background subtraction:** Separates foreground changes from a learned background."
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python",
+   "version": "3.x"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
