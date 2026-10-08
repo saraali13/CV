@@ -1,5 +1,12 @@
 # PYTHON BASIC SYNTAX CHEAT SHEET
-
+python -m venv cv_env
+#source cv_env/bin/activate
+python -m venv cv_env
+cv_env\Scripts\activate
+pip install opencv-python numpy matplotlib scikit-image scipy PyWavelets
+pip install jupyter notebook
+python --version
+pip --version
 # 1. VARIABLES & BASIC DATA TYPES
 
 name = "Sara"              # String
