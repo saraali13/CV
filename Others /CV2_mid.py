@@ -805,6 +805,20 @@ def grow(im, seed, tol):
             ])
 
     return mask
+def region_growing(image, seed, threshold):
+    mask = np.zeros_like(image, dtype=np.uint8)
+    stack = [seed]
+    seed_intensity = image[seed]
+    
+    while stack:
+        x, y = stack.pop()
+        if x < 0 or x >= image.shape[0] or y < 0 or y >= image.shape[1]:
+            continue
+        if mask[x, y] == 0:
+            if abs(int(image[x, y]) - int(seed_intensity)) < threshold:
+                mask[x, y] = 255
+                stack.extend([(x+1, y), (x-1, y), (x, y+1), (x, y-1)])
+    return mask
 seed_bright = (
     int(0.58 * h),
     int(0.32 * w)
@@ -1789,3 +1803,45 @@ hist, _ = np.histogram(lbp_image.ravel(), bins=np.arange(0, n_points + 3),
                        range=(0, n_points + 2))
 hist = hist.astype("float")
 hist /= (hist.sum() + 1e-6)
+
+#hist of edge detection (hod)
+image = cv2.imread('image.jpg', cv2.IMREAD_GRAYSCALE)
+image_smoothed = cv2.GaussianBlur(image, (5, 5), 0)
+edges = cv2.Canny(image_smoothed, threshold1=30, threshold2=70)
+
+gradient_x = cv2.Sobel(image_smoothed, cv2.CV_64F, 1, 0, ksize=3)
+gradient_y = cv2.Sobel(image_smoothed, cv2.CV_64F, 0, 1, ksize=3)
+gradient_magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+gradient_orientation = np.arctan2(gradient_y, gradient_x) * 180 / np.pi
+
+hist, bin_edges = np.histogram(gradient_orientation, bins=8, range=(0, 360))
+
+#Texture Energy Calculation	E = Σ(pixel values)²
+#Texture Contrast Calculation	C = √(var(pixel values))
+energy = cv2.filter2D(image**2, -1, np.ones((neighborhood_size, neighborhood_size)))
+contrast = cv2.filter2D(image, -1, np.ones((neighborhood_size, neighborhood_size)))
+
+energy_histogram, energy_bins = np.histogram(energy, bins=256, range=(0, energy.max()))
+contrast_histogram, contrast_bins = np.histogram(contrast, bins=256, range=(0, contrast.max()))
+
+energy_histogram = energy_histogram / energy_histogram.sum()
+contrast_histogram = contrast_histogram / contrast_histogram.sum()
+#embossing
+kernel = np.array([[-2,-1,0],[-1,1,1],[0,1,2]])
+cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)
+kernel = cv2.getGaussianKernel(5, 1.0); cv2.filter2D(image, -1, kernel)
+kernel = np.ones((3,3), np.float32)/9; cv2.filter2D(image, -1, kernel) #box blur
+#conv
+cv2.filter2D(image, -1, kernel, borderType=cv2.BORDER_CONSTANT)
+cv2.filter2D(image, -1, kernel, borderType=cv2.BORDER_REFLECT)#zero padding
+cv2.filter2D(image, -1, kernel, strides=(2,2), borderType=cv2.BORDER_CONSTANT)#with stride
+#color based thresholding
+lower_bound = np.array([30, 50, 50])
+upper_bound = np.array([60, 255, 255])
+mask = cv2.inRange(hsv_image, lower_bound, upper_bound)
+
+#Hysteresis -> use canny
+edges = cv2.Canny(image, 100, 200)
+
+
+
