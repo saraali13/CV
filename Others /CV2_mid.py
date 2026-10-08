@@ -1783,4 +1783,9 @@ lbp_image = feature.local_binary_pattern( #For each center pixel, LBP compares n
     radius,
     method='uniform' #Uniform LBP reduces the number of pattern categories by grouping patterns with limited transitions.
 )
+lbp_image = feature.local_binary_pattern(image, n_points, radius, method='uniform')
 
+hist, _ = np.histogram(lbp_image.ravel(), bins=np.arange(0, n_points + 3), 
+                       range=(0, n_points + 2))
+hist = hist.astype("float")
+hist /= (hist.sum() + 1e-6)
