@@ -1843,5 +1843,9 @@ mask = cv2.inRange(hsv_image, lower_bound, upper_bound)
 #Hysteresis -> use canny
 edges = cv2.Canny(image, 100, 200)
 
-
+#Laplacian of Gaussian (LoG)
+#canny/sobel 1st der-> peak = Edge Strength, LoG 2nd der -> Zero-Crossing = Edge Location
+blurred = cv2.GaussianBlur(gray, (5, 5), 1.4)
+laplacian = cv2.Laplacian(blurred, cv2.CV_64F)
+laplacian_abs = cv2.convertScaleAbs(laplacian)
 
