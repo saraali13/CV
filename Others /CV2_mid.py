@@ -1849,3 +1849,8 @@ blurred = cv2.GaussianBlur(gray, (5, 5), 1.4)
 laplacian = cv2.Laplacian(blurred, cv2.CV_64F)
 laplacian_abs = cv2.convertScaleAbs(laplacian)
 
+# Contrast stretching example
+r1, r2 = 100, 200  # Input range to stretch
+s1, s2 = 0, 255    # Output range
+stretched = np.interp(image, [r1, r2], [s1, s2]).astype(np.uint8)
+
